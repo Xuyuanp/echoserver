@@ -1,0 +1,26 @@
+name: Docker Image CI
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build_and_push_image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get the tag
+      id: get_tag
+      run: echo ::set-output name=TAG::$(echo ${GITHUB_REF} | cut -d / -f 3)
+    - name: Checkout
+      uses: actions/checkout@v1
+    - name: Build the Docker image
+      run: |
+          docker build . --file Dockerfile --tag xuyuanp/echoserver:${{ steps.get_tag.outputs.TAG }}
+          docker tag xuyuanp/echoserver:${{ steps.get_tag.outputs.TAG }} xuyuanp/echoserver:latest
+    - name: Login Docker registry
+      run: echo -n ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+    - name: Push Image
+      run: |
+          docker push xuyuanp/echoserver:${{ steps.get_tag.outputs.TAG }}
+          docker push xuyuanp/echoserver:latest
